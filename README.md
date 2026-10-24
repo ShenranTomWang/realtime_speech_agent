@@ -373,3 +373,9 @@ callers. These are inference jobs; benchmark scoring remains a separate stage.
 To score a profile later, set `SOULX_OUTPUT_ROOT` to its result directory when
 submitting the corresponding `jobs/eval` script, preserving its runtime/override
 settings if the evaluation reopens the run manifest.
+
+The default inference and serving jobs request two A6000 GPUs. The frontend LLM
+uses the first scheduler-assigned GPU with a 0.75 static memory fraction; ASR/VAD
+and TTS share the second GPU. `run_stack --gpu_layout split` validates the
+allocation before launching services. An explicit `--gpu_layout shared` is
+available for custom model configurations with a suitable smaller memory budget.

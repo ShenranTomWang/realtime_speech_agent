@@ -14,7 +14,7 @@ import httpx
 import websockets
 
 from soulx_agent.llm_runner import DEFAULT_CONFIG, load_llm_plan
-from soulx_agent.processes import launch, stop_processes
+from soulx_agent.processes import launch, service_devices, stop_processes
 from soulx_agent.provenance import verify_run
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,9 +71,14 @@ def main():
         "--frontend_runtime", choices=["soulx", "sglang_omni"], default="sglang_omni"
     )
     parser.add_argument("--omni_config", type=Path, default=ROOT / "config/omni.yaml")
+    parser.add_argument("--gpu_layout", choices=["split", "shared"], default="split")
     parser.add_argument("--caller_mode", choices=["local", "service"], default="local")
     parser.add_argument("--frontend_tools_override", type=Path, default=None)
     args = parser.parse_args()
+    llm_device, speech_device = service_devices(
+        os.environ.get("CUDA_VISIBLE_DEVICES", ""), args.gpu_layout
+    )
+    print(f"GPU layout={args.gpu_layout}: LLM={llm_device}, speech={speech_device}", flush=True)
     if args.frontend_tools_override is not None:
         from soulx_agent.frontend_tools import load_override
 
@@ -120,6 +125,8 @@ def main():
         (
             "soulx-agent",
             [
+                "env",
+                "CUDA_VISIBLE_DEVICES=" + llm_device,
                 "python",
                 "-m",
                 "scripts.run_llm",
@@ -132,13 +139,23 @@ def main():
         ),
         (
             "soulx-vad",
-            ["uvicorn", "server:app", "--host", "127.0.0.1", "--port", str(vad_port)],
+            [
+                "env",
+                "CUDA_VISIBLE_DEVICES=" + speech_device,
+                "uvicorn",
+                "server:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(vad_port),
+            ],
             soulx,
         ),
         (
             "soulx-tts",
             [
                 "env",
+                "CUDA_VISIBLE_DEVICES=" + speech_device,
                 "PYTHONPATH=" + os.pathsep.join([str(ROOT), os.environ.get("PYTHONPATH", "")]),
                 "python",
                 "-m",

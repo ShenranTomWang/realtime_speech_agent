@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=2-00:00:00
-#SBATCH --gres=gpu:nvidia_rtx_a6000:1
+#SBATCH --gres=gpu:nvidia_rtx_a6000:2
 
 source "${HOME_DIR}/.bashrc"
 source "${SCRATCH_DIR}/envs/soulx-agent/bin/activate"
@@ -27,6 +27,7 @@ fi
 
 python -m scripts.run_stack --benchmark eva \
     "${frontend_args[@]}" \
+    --gpu_layout split \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \
     --frontend_runtime "${SOULX_FRONTEND_RUNTIME:-sglang_omni}" \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/qwen35_4b_sglang_vector.yaml}" \

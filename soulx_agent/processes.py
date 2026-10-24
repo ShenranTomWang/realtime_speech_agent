@@ -37,3 +37,15 @@ def stop_processes(processes):
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGKILL)
             process.wait()
+
+
+def service_devices(visible_devices, layout):
+    """Preserve scheduler device IDs while isolating LLM and speech workers."""
+    devices = [device.strip() for device in visible_devices.split(",") if device.strip()]
+    if not devices:
+        raise RuntimeError("CUDA_VISIBLE_DEVICES must identify the allocated GPUs")
+    if layout == "split":
+        if len(devices) < 2 or devices[0] == devices[1]:
+            raise RuntimeError("Split GPU layout requires two distinct allocated GPUs")
+        return devices[0], devices[1]
+    return devices[0], devices[0]

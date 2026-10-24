@@ -28,7 +28,7 @@ runners:
       - --max-running-requests
       - '2'
       - --mem-fraction-static
-      - '0.35'
+      - '0.75'
     chat_template_kwargs:
       enable_thinking: false
   vector:
