@@ -1,0 +1,14 @@
+roles:
+  frontend: local_frontend
+  backend: vector
+runners:
+  vector:
+    model: Qwen3_8-27B
+    base_url: https://proxy.vectorinstitute.ai/v1
+    api_key_env: VECTOR_KEY
+  local_frontend:
+    model: frontend-local
+    base_url: http://127.0.0.1:8011/v1
+  local_backend:
+    model: backend-local
+    base_url: http://127.0.0.1:8012/v1

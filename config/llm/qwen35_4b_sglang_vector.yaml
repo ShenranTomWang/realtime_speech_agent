@@ -1,0 +1,37 @@
+roles:
+  frontend: qwen35_frontend
+  backend: vector
+runners:
+  qwen35_frontend:
+    model: Qwen/Qwen3.5-4B
+    base_url: http://127.0.0.1:8011/v1
+    launch:
+      environment: soulx-sglang
+      command:
+      - python
+      - -m
+      - sglang.launch_server
+      - --model-path
+      - Qwen/Qwen3.5-4B
+      - --served-model-name
+      - Qwen/Qwen3.5-4B
+      - --host
+      - 127.0.0.1
+      - --port
+      - '8011'
+      - --reasoning-parser
+      - qwen3
+      - --tool-call-parser
+      - qwen3_coder
+      - --context-length
+      - '65536'
+      - --max-running-requests
+      - '2'
+      - --mem-fraction-static
+      - '0.35'
+    chat_template_kwargs:
+      enable_thinking: false
+  vector:
+    model: Qwen3_8-27B
+    base_url: https://proxy.vectorinstitute.ai/v1
+    api_key_env: VECTOR_KEY

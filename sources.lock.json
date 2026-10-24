@@ -1,0 +1,35 @@
+{
+  "qwen-audio-agent": {
+    "url": "https://github.com/QwenAudio/qwen-audio-agent.git",
+    "revision": "c9790e3b6fefc42d454a47b2288d61cb0a9dc875",
+    "branch": "main"
+  },
+  "SoulX-Duplug": {
+    "url": "https://github.com/Soul-AILab/SoulX-Duplug.git",
+    "revision": "66a9f74ca39d30984eb87fc4c029fadc797b6e34",
+    "branch": "dialogue-system"
+  },
+  "tau2-bench": {
+    "url": "https://github.com/sierra-research/tau2-bench.git",
+    "revision": "05736c27219b769d0be507574dd3135010916644",
+    "branch": "main"
+  },
+  "eva": {
+    "url": "https://github.com/ServiceNow/eva.git",
+    "revision": "634a16a9fc5bf9efd1464e677eac430bb33bc036",
+    "branch": "main"
+  },
+  "Full-Duplex-Bench": {
+    "url": "https://github.com/DanielLin94144/Full-Duplex-Bench.git",
+    "revision": "3e799c45a045256f47d5f1c9cda90157e2d2ec9e",
+    "branch": "main"
+  },
+  "sglang-omni": {
+    "url": "https://github.com/sgl-project/sglang-omni.git",
+    "revision": "443304e60d524419cde8867f9ee2e44590daa364"
+  },
+  "portaudio": {
+    "url": "https://github.com/PortAudio/portaudio.git",
+    "revision": "147dd722548358763a8b649b3e4b41dfffbcfbb6"
+  }
+}

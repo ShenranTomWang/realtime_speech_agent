@@ -1,0 +1,14 @@
+model_path: soulx-claude-code-cascade
+entry_stage: frontend
+stages:
+  - name: frontend
+    process: frontend
+    factory_path: soulx_agent.omni_stage.create_frontend_scheduler
+    terminal: true
+    allow_child_processes: true
+session_nodes:
+  frontend:
+    stages: [frontend]
+    inputs: [input]
+session_publish:
+  frontend: [soulx_event]

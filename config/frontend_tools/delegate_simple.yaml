@@ -1,0 +1,9 @@
+tools:
+    - submit_task
+    - get_current_datetime
+    - get_weather
+instructions: |
+    Handle live date/time and current weather requests using the exposed simple tools.
+    Delegate all other user tasks with submit_task. Clarify missing coordinates when needed.
+    Scenario reference dates and weather take precedence over live tools.
+    You may acknowledge, clarify, and relay backend results. Never invent completion.
