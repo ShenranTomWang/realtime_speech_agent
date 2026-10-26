@@ -68,6 +68,7 @@ for benchmark in "${benchmarks[@]}"; do
 done
 
 prepare_environment soulx-agent 3.12 || exit 1
+# Stage release-compatible English metadata alongside the original HF release.
 python -m scripts.prepare_datasets \
     --source_dir "${SCRATCH_DIR}/soulx-audio-agent/sources" \
     --dataset_dir "${SCRATCH_DIR}/datasets" || exit 1

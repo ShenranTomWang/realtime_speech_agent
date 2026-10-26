@@ -5,11 +5,19 @@ def install():
     import os
 
     import tau2.agent.base.voice as voice
+    import tau2.utils.llm_utils as llm_utils
     import tau2.voice.synthesis.audio_effects.speech_generator as speech_generator
     import tau2.voice.synthesis.synthesize as synthesis
     from tau2.data_model.audio import AudioData, AudioEncoding, AudioFormat
 
-    from soulx_agent.local_caller import synthesize_caller_sync
+    from soulx_agent.local_caller import positional_caller_messages, synthesize_caller_sync
+
+    original_messages = llm_utils.to_litellm_messages
+
+    def caller_messages(messages):
+        return positional_caller_messages(original_messages(messages))
+
+    llm_utils.to_litellm_messages = caller_messages
 
     def local_synthesis(text, provider, provider_config):
         return AudioData(

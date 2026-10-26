@@ -68,6 +68,7 @@ def main():
     )
     if args.benchmark == "tau_voice":
         source = args.source_dir / "tau2-bench"
+        benchmark_dir = args.output_dir / "benchmark"
         if args.data_dir:
             env["TAU2_DATA_DIR"] = str(args.data_dir.resolve())
             os.environ["TAU2_DATA_DIR"] = env["TAU2_DATA_DIR"]
@@ -98,12 +99,15 @@ def main():
                     "1",
                     *caller_arguments,
                     "--save-to",
-                    str(args.output_dir),
+                    str(benchmark_dir),
                 ],
                 source,
                 env,
             )
         else:
+            from soulx_agent.benchmarks.tau_pins import install as install_pins
+
+            install_pins()
             from tau2.data_model.simulation import Results
             from tau2.metrics.agent_metrics import compute_metrics
             from tau2.metrics.benchmark import load_saved_benchmark
@@ -121,12 +125,14 @@ def main():
             if not reports:
                 raise FileNotFoundError("No Tau voice results; run inference first")
             (args.output_dir / "metrics.json").write_text(json.dumps(reports, indent=2))
-            summary = load_saved_benchmark(args.output_dir).submission
+            summary = load_saved_benchmark(benchmark_dir).submission
             (args.output_dir / "benchmark_summary.json").write_text(
                 summary.model_dump_json(indent=2)
             )
     elif args.benchmark == "eva":
-        source = args.data_dir.resolve() if args.data_dir else args.source_dir / "eva"
+        source = args.source_dir / "eva"
+        if args.data_dir:
+            env["SOULX_EVA_DATA_DIR"] = str(args.data_dir.resolve())
         env["SOULX_BENCHMARK"] = "eva"
         env.update(
             {

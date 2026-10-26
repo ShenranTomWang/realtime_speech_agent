@@ -379,3 +379,26 @@ uses the first scheduler-assigned GPU with a 0.75 static memory fraction; ASR/VA
 and TTS share the second GPU. `run_stack --gpu_layout split` validates the
 allocation before launching services. An explicit `--gpu_layout shared` is
 available for custom model configurations with a suitable smaller memory budget.
+
+Startup initializes the Omni CPU graph before launching model loaders, and waits
+for an actual managed-model completion before reporting LLM readiness. Each run
+checks both Claude Code agents and a live voice response before inference. The
+harness explicitly requests `low` reasoning effort (override with
+`SOULX_AGENT_EFFORT`); frontend thinking remains disabled in the model config.
+
+Tau writes its upstream benchmark plan and trajectories under
+`<output_dir>/benchmark/`. Stack diagnostics and session journals remain in the
+parent run directory. Evaluation loads the recorded benchmark from that child
+directory; this preserves Tau's strict empty-directory and resume checks.
+
+Tau Voice V1 uses canonical task pins. A compatibility adapter restores those
+exact canonical artifacts when the upstream reload/export defaults select a
+different published task variant; mismatched hashes are still rejected. Startup
+preflight checks reload, export, and drift rejection for all three domains.
+
+EVA runs from its pinned source checkout so its tool loader resolves correctly.
+`SOULX_EVA_DATA_DIR` points its local-caller configuration at the staged scratch
+release. Preprocessing adds language-indexed English identity and opening fields
+without changing the literal goals, scenario databases, or ground truth. Startup
+preflight compares all 213 staged rows against the pinned HF release and resolves
+every English goal/database before launching models.

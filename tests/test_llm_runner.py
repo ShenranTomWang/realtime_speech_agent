@@ -158,3 +158,25 @@ def test_benchmark_ports_do_not_collide_or_change_vector_host(monkeypatch):
         backend = plan.runners[plan.roles["backend"]]
         assert backend.base_url == "https://proxy.vectorinstitute.ai/v1"
     assert len(gateways) == len(frontend_ports) == 3
+
+
+async def test_warmup_exercises_generation_only_for_managed_models(monkeypatch):
+    plan = load_llm_plan(ROOT / "config/llm/qwen35_4b_sglang_vector.yaml")
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        payload = json.loads(request.content)
+        assert request.url.path == "/v1/chat/completions"
+        assert payload["chat_template_kwargs"] == {"enable_thinking": False}
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Hello"}}]})
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr(
+        llm_runner.httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(respond), **kwargs),
+    )
+    await plan.warmup_managed_models(timeout=1)
+    assert len(requests) == 1
+    assert requests[0].url.host == "127.0.0.1"

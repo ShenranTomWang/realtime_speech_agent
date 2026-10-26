@@ -1,6 +1,7 @@
 """Stage pinned benchmark releases under scratch and normalize FDB audio layout."""
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -10,6 +11,21 @@ from pathlib import Path
 
 EVA_REVISION = "ab189dd1d0e834d205239e1493c089d0e95f7dda"
 FDB_URL = "https://drive.google.com/file/d/1SO_4MTazWQ_jvCx0dtmpQ-t40bdd07yz/view"
+
+
+def eva_record(row):
+    """Adapt the literal English HF release to the runner's localization schema."""
+    row = copy.deepcopy(row)
+    if not row.get("culture_overrides"):
+        identity = row["user_goal"]["information_required"]
+        first = identity.get("first_name", identity.get("Passenger first name", ""))
+        last = identity.get("last_name", identity.get("Passenger last name", ""))
+        if re.search(r"<(?:FIRST_NAME|LAST_NAME|PHONE|COMPANION|LOC[:>])", json.dumps(row)):
+            raise ValueError(f"EVA record {row['id']} has unresolved localization placeholders")
+        row["culture_overrides"] = {"en": {"first_name": first, "last_name": last}}
+    if not row.get("starting_utterances"):
+        row["starting_utterances"] = {"en": row["user_goal"]["starting_utterance"]}
+    return row
 
 
 def copy_release(source, destination):
@@ -31,13 +47,18 @@ def prepare(source_dir, dataset_dir):
         local_dir=eva / "release",
     )
     counts = {}
+    dataset_hashes = {}
     for domain, release_name in {
         "airline": "csm_airline",
         "itsm": "itsm",
         "medical_hr": "hr_medical",
     }.items():
         release_file = eva / "release/data" / f"eva_bench_{release_name}.jsonl"
-        rows = [json.loads(line) for line in release_file.read_text().splitlines() if line.strip()]
+        rows = [
+            eva_record(json.loads(line))
+            for line in release_file.read_text().splitlines()
+            if line.strip()
+        ]
         for row in rows:
             record_id = row["id"]
             if not re.fullmatch(r"[A-Za-z0-9_.-]+", record_id):
@@ -50,9 +71,18 @@ def prepare(source_dir, dataset_dir):
             scenario.write_text(json.dumps(initial_db, indent=2) + "\n")
         (eva / "data" / f"{domain}_dataset.json").write_text(json.dumps(rows, indent=2) + "\n")
         counts[domain] = len(rows)
+        dataset_hashes[domain] = hashlib.sha256(
+            (eva / "data" / f"{domain}_dataset.json").read_bytes()
+        ).hexdigest()
     (eva / "manifest.json").write_text(
         json.dumps(
-            {"repo": "ServiceNow-AI/eva-bench", "revision": EVA_REVISION, "counts": counts},
+            {
+                "repo": "ServiceNow-AI/eva-bench",
+                "revision": EVA_REVISION,
+                "counts": counts,
+                "schema_adaptation": "literal English identity and opening in language-indexed fields",
+                "dataset_sha256": dataset_hashes,
+            },
             indent=2,
         )
         + "\n"

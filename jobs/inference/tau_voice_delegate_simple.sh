@@ -25,6 +25,7 @@ if [[ -n "${SOULX_FRONTEND_TOOLS_OVERRIDE:-}" ]]; then
     frontend_args+=(--frontend_tools_override "${SOULX_FRONTEND_TOOLS_OVERRIDE}")
 fi
 
+# Dataset compatibility is checked before model startup.
 python -m scripts.run_stack --benchmark tau_voice \
     "${frontend_args[@]}" \
     --gpu_layout split \

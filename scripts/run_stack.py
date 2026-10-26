@@ -20,6 +20,23 @@ from soulx_agent.provenance import verify_run
 ROOT = Path(__file__).resolve().parents[1]
 
 
+async def wait_voice_runtime(processes, port):
+    timeout = float(os.environ.get("SOULX_STARTUP_TIMEOUT", "1800"))
+    deadline = time.monotonic() + timeout
+    async with httpx.AsyncClient(timeout=5, trust_env=False) as client:
+        while time.monotonic() < deadline:
+            if any(process.poll() is not None for process in processes):
+                raise RuntimeError("Voice runtime exited during graph initialization")
+            try:
+                response = await client.get(f"http://127.0.0.1:{port}/healthz")
+                response.raise_for_status()
+                print("Voice runtime graph ready", flush=True)
+                return
+            except httpx.HTTPError:
+                await asyncio.sleep(2)
+    raise TimeoutError("Voice runtime graph initialization timed out")
+
+
 async def wait_services(processes, gateway_url, llm_ready):
     timeout = float(os.environ.get("SOULX_STARTUP_TIMEOUT", "1800"))
     deadline = time.monotonic() + timeout
@@ -200,7 +217,31 @@ def main():
 
     signal.signal(signal.SIGTERM, terminate)
     try:
-        for environment, command, cwd in specs:
+        if args.benchmark in {"tau_voice", "eva"}:
+            if args.data_dir is None:
+                raise ValueError("Voice benchmark inference requires --data_dir")
+            preflight = launch(
+                "soulx-tau" if args.benchmark == "tau_voice" else "soulx-eva",
+                [
+                    "python",
+                    "-m",
+                    "scripts.check_benchmark_setup",
+                    "--benchmark",
+                    args.benchmark,
+                    "--dataset_dir",
+                    str(args.data_dir.resolve().parent),
+                ],
+                ROOT,
+            )
+            processes.append(preflight)
+            if preflight.wait() != 0:
+                raise RuntimeError("Benchmark data preflight failed before model startup")
+            processes.remove(preflight)
+        # Initialize the CPU graph before competing model loaders occupy the CPUs.
+        environment, command, cwd = specs[-1]
+        processes.append(launch(environment, command, cwd))
+        asyncio.run(wait_voice_runtime(processes, voice_port))
+        for environment, command, cwd in specs[:-1]:
             processes.append(launch(environment, command, cwd))
         asyncio.run(wait_services(processes, plan.gateway_url, llm_ready))
         smoke = launch(
@@ -220,6 +261,23 @@ def main():
         if smoke.wait() != 0:
             raise RuntimeError("Real frontend/backend harness smoke check failed")
         processes.remove(smoke)
+        voice_smoke = launch(
+            "soulx-agent",
+            [
+                "python",
+                "-m",
+                "scripts.smoke_voice",
+                "--server_url",
+                os.environ["SOULX_SERVER_URL"],
+                "--output_dir",
+                str(args.output_dir),
+            ],
+            ROOT,
+        )
+        processes.append(voice_smoke)
+        if voice_smoke.wait() != 0:
+            raise RuntimeError("Real voice session smoke check failed")
+        processes.remove(voice_smoke)
         worker = None
         if args.benchmark != "serve":
             command = [

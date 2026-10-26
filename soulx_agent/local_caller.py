@@ -82,3 +82,26 @@ class LocalCaller:
             raise ValueError("Local caller returned invalid utterance/end_call JSON")
         self.messages.append({"role": "assistant", "content": content})
         return result
+
+
+def positional_caller_messages(messages):
+    """Keep later simulator instructions in place for strict chat templates."""
+    result = []
+    conversation_started = False
+    for message in messages:
+        if message.get("role") == "system" and conversation_started:
+            message = {
+                **message,
+                "role": "user",
+                "content": "[Simulator instruction]\n" + message["content"],
+            }
+        elif message.get("role") == "system" and result:
+            result[0] = {
+                **result[0],
+                "content": result[0]["content"] + "\n\n" + message["content"],
+            }
+            continue
+        elif message.get("role") != "system":
+            conversation_started = True
+        result.append(message)
+    return result

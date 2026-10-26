@@ -14,6 +14,7 @@ export SOULX_OMNI_CONFIG="${PROJECT_DIR}/soulx-audio-agent/config/omni.yaml"
 export TOKENIZERS_PARALLELISM=false
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
 
+# Tau loads its recorded benchmark from the output directory's benchmark/ child.
 python -m scripts.run_benchmark tau_voice eval \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/qwen35_4b_sglang_vector.yaml}" \

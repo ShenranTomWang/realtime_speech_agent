@@ -7,6 +7,9 @@ import httpx
 
 
 def install():
+    from .tau_pins import install as install_pins
+
+    install_pins()
     if os.environ.get("SOULX_CALLER_MODE") == "local":
         from .local_tau import install as install_local
 

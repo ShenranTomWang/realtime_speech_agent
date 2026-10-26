@@ -49,3 +49,32 @@ def test_local_speech_conversion_returns_real_pcm_at_requested_rate():
     sf.write(wav, np.zeros(2400, dtype=np.float32), 24000, format="WAV")
     audio = local_caller.decode_speech(wav.getvalue(), 16000)
     assert len(audio) == 1600 * 2
+
+
+def test_tau_positional_instructions_preserve_chronology_and_input():
+    from soulx_agent.local_caller import positional_caller_messages
+
+    messages = [
+        {"role": "system", "content": "Play the customer"},
+        {"role": "user", "content": "How can I help?"},
+        {"role": "system", "content": "You have 10 seconds left"},
+    ]
+    result = positional_caller_messages(messages)
+    assert [message["role"] for message in result] == ["system", "user", "user"]
+    assert result[-1]["content"] == "[Simulator instruction]\nYou have 10 seconds left"
+    assert messages[-1]["role"] == "system"
+
+
+def test_tau_combines_multiple_initial_system_instructions():
+    from soulx_agent.local_caller import positional_caller_messages
+
+    messages = [
+        {"role": "system", "content": "Persona"},
+        {"role": "system", "content": "Simulation rules"},
+        {"role": "user", "content": "Hello"},
+    ]
+    result = positional_caller_messages(messages)
+    assert result == [
+        {"role": "system", "content": "Persona\n\nSimulation rules"},
+        {"role": "user", "content": "Hello"},
+    ]

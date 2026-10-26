@@ -17,6 +17,7 @@ from soulx_agent.processes import launch, stop_processes
 async def ready(plan, processes):
     timeout = float(os.environ.get("SOULX_STARTUP_TIMEOUT", "1800"))
     await plan.wait_for_models(processes, timeout=timeout)
+    await plan.warmup_managed_models(timeout=timeout)
     async with httpx.AsyncClient(timeout=5, trust_env=False) as client:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:

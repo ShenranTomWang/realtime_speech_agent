@@ -124,6 +124,32 @@ class LLMPlan:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(yaml.safe_dump(self.gateway_config(), sort_keys=False))
 
+    async def warmup_managed_models(self, timeout=1800):
+        # A model-list endpoint may respond before CUDA kernels are compiled.
+        for runner in self.selected_runners:
+            if not runner.command:
+                continue
+            print(f"Warming model generation: {runner.name}", flush=True)
+            headers = {}
+            if runner.api_key_env:
+                headers["Authorization"] = "Bearer " + os.environ[runner.api_key_env]
+            async with httpx.AsyncClient(timeout=timeout, trust_env=False) as client:
+                response = await client.post(
+                    runner.base_url + "/chat/completions",
+                    headers=headers,
+                    json={
+                        "model": runner.model,
+                        "messages": [{"role": "user", "content": "Say hello in one word."}],
+                        "max_tokens": 32,
+                        "chat_template_kwargs": runner.chat_template_kwargs,
+                    },
+                )
+                response.raise_for_status()
+                message = response.json()["choices"][0]["message"]
+                if not message.get("content"):
+                    raise RuntimeError(f"Runner {runner.name} warmup returned no text")
+            print(f"Model generation ready: {runner.name}", flush=True)
+
     async def wait_for_models(self, processes, timeout=600):
         pending = {runner.name: runner for runner in self.selected_runners}
         deadline = time.monotonic() + timeout

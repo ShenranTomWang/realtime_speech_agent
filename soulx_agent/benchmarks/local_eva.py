@@ -2,9 +2,11 @@
 
 import asyncio
 import contextlib
+import os
+from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 def install():
@@ -31,6 +33,31 @@ def install():
             | LocalSimulatorConfig,
             Field(discriminator="provider"),
         ] = Field(default_factory=LocalSimulatorConfig)
+
+        @computed_field
+        @property
+        def dataset_path(self) -> Path:
+            return (
+                Path(os.environ.get("SOULX_EVA_DATA_DIR", "."))
+                / "data"
+                / f"{self.domain}_dataset.json"
+            )
+
+        @computed_field
+        @property
+        def tool_mocks_path(self) -> Path:
+            return (
+                Path(os.environ.get("SOULX_EVA_DATA_DIR", "."))
+                / "data"
+                / f"{self.domain}_scenarios"
+            )
+
+        @computed_field
+        @property
+        def aliases_path(self) -> Path:
+            return (
+                Path(os.environ.get("SOULX_EVA_DATA_DIR", ".")) / "data" / f"{self.domain}_aliases"
+            )
 
     class LocalUserSimulator(AbstractUserSimulator):
         def __init__(self, **kwargs):

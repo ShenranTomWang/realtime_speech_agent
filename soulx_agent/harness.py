@@ -45,6 +45,7 @@ class ClaudeHarness:
             setting_sources=[],
             strict_mcp_config=True,
             max_turns=32,
+            effort=os.environ.get("SOULX_AGENT_EFFORT", "low"),
             env={
                 "ANTHROPIC_BASE_URL": self.connection.base_url,
                 "ANTHROPIC_AUTH_TOKEN": token,
@@ -63,7 +64,9 @@ class ClaudeHarness:
                     )
                 elif isinstance(message, ResultMessage):
                     if message.is_error:
-                        raise RuntimeError(f"Claude Code run failed: {message.subtype}")
+                        raise RuntimeError(
+                            f"Claude Code run failed: {message.subtype}: {message.result}"
+                        )
                     final = message.result or final
                     completed = True
         if not completed:
