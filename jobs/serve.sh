@@ -14,6 +14,7 @@ export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export SOULX_STARTUP_TIMEOUT="${SOULX_STARTUP_TIMEOUT:-1800}"
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
+# Start runtime services with readiness waits; debug through interactive sessions.
 python -m scripts.run_stack --benchmark serve \
     --gpu_layout split \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \

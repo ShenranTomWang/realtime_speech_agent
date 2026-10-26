@@ -10,3 +10,4 @@ runs/
 slurm-*.out
 *.egg-info/
 .ruff_cache/
+experiments

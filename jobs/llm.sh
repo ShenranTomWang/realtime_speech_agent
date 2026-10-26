@@ -16,6 +16,7 @@ export SOULX_STARTUP_TIMEOUT="${SOULX_STARTUP_TIMEOUT:-1800}"
 export PYTHONUNBUFFERED=1
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
 
+# Start runtime services with readiness waits; debug through interactive sessions.
 python -m scripts.run_llm \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/managed_local.yaml}" \
     --output_dir "${SOULX_LLM_OUTPUT_DIR:-${SCRATCH_DIR}/soulx-audio-agent/llm_runtime}"

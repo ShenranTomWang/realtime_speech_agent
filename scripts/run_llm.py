@@ -17,7 +17,6 @@ from soulx_agent.processes import launch, stop_processes
 async def ready(plan, processes):
     timeout = float(os.environ.get("SOULX_STARTUP_TIMEOUT", "1800"))
     await plan.wait_for_models(processes, timeout=timeout)
-    await plan.warmup_managed_models(timeout=timeout)
     async with httpx.AsyncClient(timeout=5, trust_env=False) as client:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -42,7 +41,6 @@ def main():
     plan = load_llm_plan(args.llm_config)
     if not os.environ.get("SOULX_GATEWAY_KEY"):
         os.environ["SOULX_GATEWAY_KEY"] = "sk-" + secrets.token_urlsafe(32)
-    plan.validate_credentials()
     args.output_dir = args.output_dir.resolve()
     gateway_config = args.output_dir / "gateway.yaml"
     (args.output_dir / "ready.json").unlink(missing_ok=True)

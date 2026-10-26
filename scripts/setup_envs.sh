@@ -10,7 +10,7 @@ prepare_environment() {
 }
 
 prepare_environment soulx-agent 3.12 || exit 1
-uv sync --active --locked --extra test || exit 1
+uv sync --active --locked || exit 1
 uv pip install huggingface_hub modelscope gdown || exit 1
 python -m scripts.setup_sources \
     --source_dir "${SCRATCH_DIR}/soulx-audio-agent/sources" \

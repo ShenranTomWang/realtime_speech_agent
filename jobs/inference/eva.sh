@@ -23,6 +23,7 @@ if [[ -n "${SOULX_FRONTEND_TOOLS_OVERRIDE:-}" ]]; then
 fi
 
 # Dataset compatibility is checked before model startup.
+# Start runtime services with readiness waits; debug through interactive sessions.
 python -m scripts.run_stack --benchmark eva \
     "${frontend_args[@]}" \
     --gpu_layout split \

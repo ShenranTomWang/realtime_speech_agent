@@ -135,9 +135,9 @@ entry points use `--frontend_runtime` and `--omni_config`.
 The Tau service ports are 4000 (LLM API adapter), 8000 (SoulX),
 6006 (IndexTTS) and 8765 (audio gateway). Inference jobs own and stop their service
 processes. EVA offsets these ports by 100, FDB by 200 and interactive serving by
-300, allowing the three stacks to share a node. They fail on service exit, missing credentials or failed readiness checks.
+300, allowing the three stacks to share a node. They fail on service exit or failed service readiness checks.
 The one-GPU A6000 allocation is an initial resource configuration that still needs
-an allocated-node smoke run to verify memory use. Managed local LLMs also consume GPU
+an interactive allocated-node session to inspect memory use. Managed local LLMs also consume GPU
 memory: adjust their serving parameters and Slurm resources for the selected model.
 
 ## Choose LLM hosting independently
@@ -304,22 +304,11 @@ supply their own task tools. Sessions can be explicitly ended with
 `DELETE /sessions/<id>`; a normal disconnect preserves accepted backend work while
 the gateway remains running.
 
-## Verification
+## Interactive debugging
 
-```bash
-uv sync --locked --extra test
-uv run --extra test pytest -q
-```
-
-Local tests exercise independent delegation, explicit cancellation, barge-in,
-delayed result delivery, tool round-trips, SoulX audio encoding, MCP restrictions,
-and a real OpenAI streaming client against a live loopback gateway. Additional tests
-cover all four local/Vector role combinations, credential independence, local model
-readiness, shared-server selection and host/model changes during resume. Model and TTS
-boundaries are replaced during those tests: they incur no inference calls.
-A separate smoke check also exercised the actual bundled Claude Code harness and an MCP tool against a local mock Anthropic endpoint. Compilation and shell syntax are also checked. Actual Claude Code → LiteLLM → selected-model inference, local vLLM GPU serving,
-GPU audio service startup and complete benchmark runs remain
-for the allocated-node smoke run and later inference/evaluation jobs.
+Debug runtime issues through interactive sessions with `jobs/serve.sh`, service logs,
+and saved session journals. This repository does not maintain automated tests or
+run synthetic agent/voice checks during startup.
 
 See `THIRD_PARTY_NOTICES.md` for attribution and retained licenses.
 
@@ -380,10 +369,9 @@ and TTS share the second GPU. `run_stack --gpu_layout split` validates the
 allocation before launching services. An explicit `--gpu_layout shared` is
 available for custom model configurations with a suitable smaller memory budget.
 
-Startup initializes the Omni CPU graph before launching model loaders, and waits
-for an actual managed-model completion before reporting LLM readiness. Each run
-checks both Claude Code agents and a live voice response before inference. The
-harness explicitly requests `low` reasoning effort (override with
+Startup initializes the Omni CPU graph before launching model loaders, then waits
+for model endpoints and runtime services to become ready. The harness explicitly
+requests `low` reasoning effort (override with
 `SOULX_AGENT_EFFORT`); frontend thinking remains disabled in the model config.
 
 Tau writes its upstream benchmark plan and trajectories under
@@ -393,12 +381,9 @@ directory; this preserves Tau's strict empty-directory and resume checks.
 
 Tau Voice V1 uses canonical task pins. A compatibility adapter restores those
 exact canonical artifacts when the upstream reload/export defaults select a
-different published task variant; mismatched hashes are still rejected. Startup
-preflight checks reload, export, and drift rejection for all three domains.
+different published task variant; mismatched hashes are still rejected.
 
 EVA runs from its pinned source checkout so its tool loader resolves correctly.
 `SOULX_EVA_DATA_DIR` points its local-caller configuration at the staged scratch
 release. Preprocessing adds language-indexed English identity and opening fields
-without changing the literal goals, scenario databases, or ground truth. Startup
-preflight compares all 213 staged rows against the pinned HF release and resolves
-every English goal/database before launching models.
+without changing the literal goals, scenario databases, or ground truth.

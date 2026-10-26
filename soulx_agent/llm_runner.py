@@ -42,12 +42,6 @@ class ModelRunner:
     command: tuple[str, ...]
     chat_template_kwargs: dict = field(default_factory=dict)
 
-    def validate_credentials(self):
-        if self.api_key_env and not os.environ.get(self.api_key_env):
-            raise RuntimeError(
-                f"Runner {self.name} requires environment variable {self.api_key_env}"
-            )
-
     def gateway_parameters(self):
         parameters = {
             "model": "openai/" + self.model,
@@ -87,12 +81,6 @@ class LLMPlan:
     def selected_runners(self):
         return [self.runners[name] for name in dict.fromkeys(self.roles.values())]
 
-    def validate_credentials(self):
-        if not os.environ.get("SOULX_GATEWAY_KEY"):
-            raise RuntimeError("Required environment variable is not set: SOULX_GATEWAY_KEY")
-        for runner in self.selected_runners:
-            runner.validate_credentials()
-
     def gateway_config(self):
         return {
             "model_list": [
@@ -123,32 +111,6 @@ class LLMPlan:
     def write_gateway_config(self, destination):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(yaml.safe_dump(self.gateway_config(), sort_keys=False))
-
-    async def warmup_managed_models(self, timeout=1800):
-        # A model-list endpoint may respond before CUDA kernels are compiled.
-        for runner in self.selected_runners:
-            if not runner.command:
-                continue
-            print(f"Warming model generation: {runner.name}", flush=True)
-            headers = {}
-            if runner.api_key_env:
-                headers["Authorization"] = "Bearer " + os.environ[runner.api_key_env]
-            async with httpx.AsyncClient(timeout=timeout, trust_env=False) as client:
-                response = await client.post(
-                    runner.base_url + "/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": runner.model,
-                        "messages": [{"role": "user", "content": "Say hello in one word."}],
-                        "max_tokens": 32,
-                        "chat_template_kwargs": runner.chat_template_kwargs,
-                    },
-                )
-                response.raise_for_status()
-                message = response.json()["choices"][0]["message"]
-                if not message.get("content"):
-                    raise RuntimeError(f"Runner {runner.name} warmup returned no text")
-            print(f"Model generation ready: {runner.name}", flush=True)
 
     async def wait_for_models(self, processes, timeout=600):
         pending = {runner.name: runner for runner in self.selected_runners}

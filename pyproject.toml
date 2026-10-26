@@ -21,13 +21,9 @@ dependencies = [
 
 [project.optional-dependencies]
 gateway = ["litellm[proxy]>=1.80,<2"]
-test = ["pytest>=8,<10", "pytest-asyncio>=0.24,<2", "openai>=2.36,<4"]
 
 [tool.setuptools.packages.find]
 include = ["soulx_agent*", "scripts*"]
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100

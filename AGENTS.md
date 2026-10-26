@@ -9,3 +9,5 @@ Read credentials only for selected runners, from environment variables. Do not l
 Slurm: source "${HOME_DIR}/.bashrc", then scratch environment; no set -euo pipefail,
 no log redirection, no shared path redefinitions. Submit from each script's directory.
 Do not submit inference/evaluation jobs until the user requests submission.
+
+Debug interactively; do not add automated tests, startup smoke checks, or credential prevalidation.

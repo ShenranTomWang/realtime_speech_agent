@@ -9,4 +9,5 @@ source "${HOME_DIR}/.bashrc"
 source "${SCRATCH_DIR}/envs/cue-gpu/bin/activate"
 export PYTHONUNBUFFERED=1
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
+# Install runtime dependencies without automated test checks.
 bash -c "$(cat scripts/setup_omni.sh)"

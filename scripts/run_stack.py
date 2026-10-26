@@ -122,7 +122,6 @@ def main():
     plan = load_llm_plan(args.llm_config)
     if not os.environ.get("SOULX_GATEWAY_KEY"):
         os.environ["SOULX_GATEWAY_KEY"] = "sk-" + secrets.token_urlsafe(32)
-    plan.validate_credentials()
     os.environ["SOULX_GATEWAY_URL"] = plan.gateway_url
     lock = json.loads((ROOT / "sources.lock.json").read_text())
     for name, item in lock.items():
@@ -217,26 +216,6 @@ def main():
 
     signal.signal(signal.SIGTERM, terminate)
     try:
-        if args.benchmark in {"tau_voice", "eva"}:
-            if args.data_dir is None:
-                raise ValueError("Voice benchmark inference requires --data_dir")
-            preflight = launch(
-                "soulx-tau" if args.benchmark == "tau_voice" else "soulx-eva",
-                [
-                    "python",
-                    "-m",
-                    "scripts.check_benchmark_setup",
-                    "--benchmark",
-                    args.benchmark,
-                    "--dataset_dir",
-                    str(args.data_dir.resolve().parent),
-                ],
-                ROOT,
-            )
-            processes.append(preflight)
-            if preflight.wait() != 0:
-                raise RuntimeError("Benchmark data preflight failed before model startup")
-            processes.remove(preflight)
         # Initialize the CPU graph before competing model loaders occupy the CPUs.
         environment, command, cwd = specs[-1]
         processes.append(launch(environment, command, cwd))
@@ -244,40 +223,6 @@ def main():
         for environment, command, cwd in specs[:-1]:
             processes.append(launch(environment, command, cwd))
         asyncio.run(wait_services(processes, plan.gateway_url, llm_ready))
-        smoke = launch(
-            "soulx-agent",
-            [
-                "python",
-                "-m",
-                "scripts.smoke_agents",
-                "--llm_config",
-                str(args.llm_config),
-                "--output_dir",
-                str(args.output_dir),
-            ],
-            ROOT,
-        )
-        processes.append(smoke)
-        if smoke.wait() != 0:
-            raise RuntimeError("Real frontend/backend harness smoke check failed")
-        processes.remove(smoke)
-        voice_smoke = launch(
-            "soulx-agent",
-            [
-                "python",
-                "-m",
-                "scripts.smoke_voice",
-                "--server_url",
-                os.environ["SOULX_SERVER_URL"],
-                "--output_dir",
-                str(args.output_dir),
-            ],
-            ROOT,
-        )
-        processes.append(voice_smoke)
-        if voice_smoke.wait() != 0:
-            raise RuntimeError("Real voice session smoke check failed")
-        processes.remove(voice_smoke)
         worker = None
         if args.benchmark != "serve":
             command = [
