@@ -66,6 +66,7 @@ is an audit trail; it does not restore tasks after a server/process restart. Spe
 | `soulx_agent/application.py`, `contracts.py` | Wire role aliases to the harness through small shared contracts |
 | `soulx_agent/llm_runner.py`, `scripts/run_llm.py` | Model endpoint selection, credentials, readiness, optional local serving and API adaptation |
 | `soulx_agent/orchestration.py` | Foreground turns, independent backend tasks and result delivery |
+| `soulx_agent/toolchain/` | Dynamically discovered custom tool definitions and session-bound callbacks |
 | `soulx_agent/audio.py` | SoulX float32/16 kHz protocol and IndexTTS client |
 | `soulx_agent/server.py` | Browser and realtime audio gateway; PCM16/24 kHz benchmark endpoint |
 | `soulx_agent/benchmarks/` | tau-Voice, EVA and FDB v3 adapters |
@@ -336,19 +337,39 @@ fail closed when the session is configured. Backend tools remain unchanged.
 ```yaml
 tools:
     - submit_task
+    - task_status
+    - check_task_status
+    - cancel_task
+    - steer_task
     - get_current_datetime
     - get_weather
 instructions: |
     Use the simple tools for their supported requests; delegate other tasks.
 ```
 
-Names select existing benchmark tools or built-in helpers, never executable YAML
-or arbitrary imports. `instructions` is optional. The effective tool names are
+Names select existing benchmark tools or registered custom tools, never executable
+YAML or arbitrary imports. `instructions` is optional. The effective tool names are
 journaled for each session, and the parsed override is recorded in the run manifest;
 changing it prevents resuming into the same output directory.
 
-`config/frontend_tools/delegate_only.yaml` permits only `submit_task` and explicitly
-instructs delegation of every task. `delegate_simple.yaml` permits delegation plus
+`config/frontend_tools/delegate_only.yaml` exposes `submit_task`, `task_status`,
+`check_task_status`, `cancel_task`, and `steer_task`, and instructs delegation of every task.
+`task_status()` lists all accepted tasks; `check_task_status(task_id)` returns one
+task with its ID, status, request, and available result/steering history. Unknown IDs
+return an error. Internal harness and future objects are excluded.
+`steer_task(task_id, instruction)` interrupts the running backend response and sends
+the correction into the same Claude Code session, retaining context and prior tool
+results. It only accepts running tasks and cannot undo completed side effects.
+Custom tools live in `soulx_agent/toolchain/`: `tasks.py` contains task controls and
+`helpers.py` contains live time/weather helpers. The loader discovers provider modules
+in this package and calls `build_tools(coordinator)` to bind each session's callbacks.
+To add tools, add a module with that factory and include its tool names in the desired
+YAML profile. Factories must only construct tools, without accessing coordinator state
+or making requests until a callback runs; name discovery passes `None`. Tool names
+must be unique across providers and cannot collide with benchmark tools. Backend
+environment tools remain unchanged.
+
+Both profiles expose these task controls. `delegate_simple.yaml` additionally permits
 live UTC time and Open-Meteo current weather at supplied coordinates. Live time and
 weather never replace benchmark scenario facts. Weather needs network access and
 returns an error on service failure; no simulated weather is substituted.

@@ -16,6 +16,7 @@ from .application import create_harness
 from .audio import SoulXAudio, synthesize
 from .contracts import Tool
 from .orchestration import Coordinator
+from .toolchain import tool_names
 
 SESSIONS = {}
 OMNI_RUNTIME = None
@@ -45,11 +46,7 @@ class VoiceSession:
         self.attached.set()
         definitions = config.get("tools", [])
         names = [item["name"] for item in definitions]
-        if len(names) != len(set(names)) or set(names) & {
-            "submit_task",
-            "task_status",
-            "cancel_task",
-        }:
+        if len(names) != len(set(names)) or set(names) & tool_names():
             raise ValueError("Duplicate or reserved environment tool name")
         tools = []
         for definition in definitions:

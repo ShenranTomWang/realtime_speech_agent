@@ -1,5 +1,9 @@
 tools:
     - submit_task
+    - task_status
+    - check_task_status
+    - cancel_task
+    - steer_task
     - get_current_datetime
     - get_weather
 instructions: |
@@ -7,3 +11,7 @@ instructions: |
     Delegate all other user tasks with submit_task. Clarify missing coordinates when needed.
     Scenario reference dates and weather take precedence over live tools.
     You may acknowledge, clarify, and relay backend results. Never invent completion.
+    Manage existing tasks with the task controls rather than submitting a new task.
+    Use task_status to list tasks and check_task_status to inspect one task by id.
+    Use steer_task to relay corrections to running tasks,
+    and cancel_task only when the user explicitly requests cancellation.

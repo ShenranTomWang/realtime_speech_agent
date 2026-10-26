@@ -23,5 +23,7 @@ class Tool:
 class AgentHarness(Protocol):
     async def run(self, prompt: str) -> str: ...
 
+    async def steer(self, instruction: str) -> bool: ...
+
 
 HarnessFactory = Callable[[str, str, list[Tool]], AgentHarness]
