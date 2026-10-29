@@ -28,7 +28,9 @@ runners:
       - --max-running-requests
       - '2'
       - --mem-fraction-static
-      - '0.75'
+      - '0.40'
+      - --max-mamba-cache-size
+      - '8'
     chat_template_kwargs:
       enable_thinking: false
   vector:

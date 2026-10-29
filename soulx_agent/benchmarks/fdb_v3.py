@@ -10,8 +10,10 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 import typing
+from pathlib import Path
 
 import httpx
 import numpy as np
@@ -192,6 +194,7 @@ async def infer_one(
         except Exception as error:
             result["status"] = "inference_failed"
             result["error"] = type(error).__name__
+            result["error_message"] = str(error)
             raise
         finally:
             receiver.cancel()
@@ -249,7 +252,14 @@ def prepare_scoring(source, data_dir, output_dir):
             continue
         if result["status"] != "inference_completed":
             raise RuntimeError(f"Failed inference must be rerun before scoring: {path}")
-        input_asr = upstream.run_asr(model, data_dir / path.parent.name / "input.wav")
+        input_path = data_dir / path.parent.name / "input.wav"
+        with tempfile.TemporaryDirectory(dir=output_dir) as temporary:
+            if sf.info(input_path).channels > 1:
+                samples, rate = sf.read(input_path, dtype="float32", always_2d=True)
+                mono_path = Path(temporary) / "input.wav"
+                sf.write(mono_path, samples.mean(axis=1), rate)
+                input_path = mono_path
+            input_asr = upstream.run_asr(model, input_path)
         output_asr = upstream.run_asr(model, path.parent / "output_soulx_claude_code.wav")
         if not input_asr["chunks"]:
             raise RuntimeError("Input ASR failed; cannot estimate benchmark speech-end timing")

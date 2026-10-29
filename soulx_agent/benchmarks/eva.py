@@ -15,6 +15,19 @@ def install():
         from .eva_inference import install as install_inference
 
         install_inference()
+    elif os.environ.get("SOULX_BENCHMARK_PHASE") == "eval":
+        from eva.metrics import runner as metrics_runner
+        from eva.user_simulator.base import load_behavior_prompts
+
+        resolve_user_config = metrics_runner.resolve_user_config
+        default_persona = load_behavior_prompts()["default"]
+
+        def resolve_release_user_config(*args, **kwargs):
+            resolved = resolve_user_config(*args, **kwargs)
+            resolved.setdefault("user_persona", default_persona)
+            return resolved
+
+        metrics_runner.resolve_user_config = resolve_release_user_config
     from eva.assistant import openai_realtime_server as module
 
     class SoulXAssistantServer(module.OpenAIRealtimeAssistantServer):
@@ -36,7 +49,7 @@ def install():
             if event.type == "session.updated":
                 self.soulx_session_id = event.session.id
             if event.type == "error":
-                raise RuntimeError("SoulX runtime reported an error")
+                raise RuntimeError(f"SoulX runtime reported an error: {event.error}")
             await super()._handle_openai_event(event, conn, websocket, audio_output_queue)
 
         async def _shutdown(self):
@@ -48,7 +61,7 @@ def install():
                     .replace("ws://", "http://")
                     .replace("wss://", "https://")
                 )
-                async with httpx.AsyncClient(trust_env=False) as client:
+                async with httpx.AsyncClient(timeout=180, trust_env=False) as client:
                     response = await client.delete(base + "/sessions/" + self.soulx_session_id)
                     response.raise_for_status()
 

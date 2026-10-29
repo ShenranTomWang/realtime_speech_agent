@@ -28,7 +28,9 @@ def main():
     parser.add_argument(
         "--llm_config", type=Path, default=os.environ.get("SOULX_LLM_CONFIG", DEFAULT_CONFIG)
     )
-    parser.add_argument("--tail_seconds", type=float, default=120)
+    parser.add_argument(
+        "--tail_seconds", type=float, default=float(os.environ.get("SOULX_FDB_TAIL_SECONDS", "120"))
+    )
     parser.add_argument(
         "--latency_profile", choices=["instant", "fast", "normal", "slow"], default="instant"
     )
@@ -95,6 +97,8 @@ def main():
                     "1",
                     "--global-limit",
                     "1",
+                    "--timeout",
+                    os.environ.get("SOULX_TAU_TIMEOUT_SECONDS", "1800"),
                     "--workers",
                     "1",
                     *caller_arguments,
@@ -175,7 +179,30 @@ def main():
                 env["EVA_METRICS"] = "all"
                 env["EVA_MAX_RERUN_ATTEMPTS"] = "0"
                 env["EVA_PREFLIGHT"] = "false"
-            run([sys.executable, "-m", "eva.cli"], source, env)
+            summary_path = args.output_dir / env["EVA_RUN_ID"] / "inference_summary.json"
+            if args.phase == "inference":
+                summary_path.unlink(missing_ok=True)
+            result = subprocess.run([sys.executable, "-m", "eva.cli"], cwd=source, env=env)
+            if result.returncode:
+                summary = (
+                    json.loads(summary_path.read_text())
+                    if args.phase == "inference" and summary_path.exists()
+                    else {}
+                )
+                recorded = len(summary.get("completed_record_ids", [])) + len(
+                    summary.get("failed_record_ids", [])
+                )
+                if (
+                    result.returncode != 1
+                    or not summary.get("failed_record_ids")
+                    or recorded != summary.get("total_records")
+                ):
+                    result.check_returncode()
+                print(
+                    f"EVA {domain}: recorded {len(summary['failed_record_ids'])} failed "
+                    "conversations; continuing to the next domain.",
+                    flush=True,
+                )
     else:
         from soulx_agent.benchmarks.fdb_v3 import infer, prepare_scoring
 

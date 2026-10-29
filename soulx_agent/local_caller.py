@@ -68,8 +68,23 @@ class LocalCaller:
                     "model": os.environ["SOULX_CALLER_MODEL"],
                     "messages": self.messages,
                     "temperature": 0.7,
-                    "max_tokens": 512,
-                    "response_format": {"type": "json_object"},
+                    "max_tokens": 1024,
+                    "response_format": {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "caller_reply",
+                            "strict": True,
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "utterance": {"type": "string"},
+                                    "end_call": {"type": "boolean"},
+                                },
+                                "required": ["utterance", "end_call"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
                     "chat_template_kwargs": {"enable_thinking": False},
                 },
             )

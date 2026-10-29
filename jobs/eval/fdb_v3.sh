@@ -10,11 +10,13 @@ source "${HOME_DIR}/.bashrc"
 source "${SCRATCH_DIR}/envs/soulx-fdb/bin/activate"
 export LITELLM_LOCAL_MODEL_COST_MAP=True
 export PYTHONUNBUFFERED=1
+export SOULX_FDB_TAIL_SECONDS=300
 export SOULX_FRONTEND_RUNTIME="${SOULX_FRONTEND_RUNTIME:-sglang_omni}"
 export SOULX_OMNI_CONFIG="${PROJECT_DIR}/soulx-audio-agent/config/omni.yaml"
 export TOKENIZERS_PARALLELISM=false
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
 
+# Preserve recorded failures and continue across benchmark domains.
 python -m scripts.run_benchmark fdb_v3 eval \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/qwen35_4b_sglang_vector.yaml}" \

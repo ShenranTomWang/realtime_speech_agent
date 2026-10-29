@@ -4,11 +4,12 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=2-00:00:00
-#SBATCH --gres=gpu:nvidia_rtx_a6000:2
+#SBATCH --gres=gpu:nvidia_rtx_a6000:1
 
 source "${HOME_DIR}/.bashrc"
 source "${SCRATCH_DIR}/envs/soulx-agent/bin/activate"
 export LITELLM_LOCAL_MODEL_COST_MAP=True
+export EVA_BASE_PORT=22000
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
@@ -17,7 +18,7 @@ export PYTHONUNBUFFERED=1
 export TOKENIZERS_PARALLELISM=false
 export SOULX_PORT_OFFSET=1100
 export SOULX_FRONTEND_TOOLS_OVERRIDE="config/frontend_tools/delegate_only.yaml"
-export SOULX_OUTPUT_ROOT="${SCRATCH_DIR}/soulx-audio-agent/results/delegate_only"
+export SOULX_OUTPUT_ROOT="${SOULX_OUTPUT_ROOT:-${SCRATCH_DIR}/soulx-audio-agent/results/delegate_only}"
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
 
 frontend_args=()
@@ -25,11 +26,11 @@ if [[ -n "${SOULX_FRONTEND_TOOLS_OVERRIDE:-}" ]]; then
     frontend_args+=(--frontend_tools_override "${SOULX_FRONTEND_TOOLS_OVERRIDE}")
 fi
 
-# Dataset compatibility is checked before model startup.
 # Start runtime services with readiness waits; debug through interactive sessions.
+# Preserve recorded failures and continue across benchmark domains.
 python -m scripts.run_stack --benchmark eva \
     "${frontend_args[@]}" \
-    --gpu_layout split \
+    --gpu_layout shared \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \
     --frontend_runtime "${SOULX_FRONTEND_RUNTIME:-sglang_omni}" \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/qwen35_4b_sglang_vector.yaml}" \

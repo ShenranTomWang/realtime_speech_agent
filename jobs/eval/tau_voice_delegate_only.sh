@@ -14,10 +14,11 @@ export SOULX_OMNI_CONFIG="${PROJECT_DIR}/soulx-audio-agent/config/omni.yaml"
 export TOKENIZERS_PARALLELISM=false
 export SOULX_PORT_OFFSET=1000
 export SOULX_FRONTEND_TOOLS_OVERRIDE="config/frontend_tools/delegate_only.yaml"
-export SOULX_OUTPUT_ROOT="${SCRATCH_DIR}/soulx-audio-agent/results/delegate_only"
+export SOULX_OUTPUT_ROOT="${SOULX_OUTPUT_ROOT:-${SCRATCH_DIR}/soulx-audio-agent/results/delegate_only}"
 cd "${PROJECT_DIR}/soulx-audio-agent" || exit 1
 
 # Tau loads its recorded benchmark from the output directory's benchmark/ child.
+# Preserve recorded failures and continue across benchmark domains.
 python -m scripts.run_benchmark tau_voice eval \
     --caller_mode "${SOULX_CALLER_MODE:-local}" \
     --llm_config "${SOULX_LLM_CONFIG:-config/llm/qwen35_4b_sglang_vector.yaml}" \

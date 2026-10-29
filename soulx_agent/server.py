@@ -4,6 +4,7 @@ import asyncio
 import base64
 import contextlib
 import json
+import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -80,7 +81,11 @@ class VoiceSession:
 
     def check_worker(self, task):
         if not task.cancelled() and task.exception():
-            self.failure = type(task.exception()).__name__
+            error = task.exception()
+            logging.getLogger(__name__).error(
+                "Session worker failed", exc_info=(type(error), error, error.__traceback__)
+            )
+            self.failure = type(error).__name__
             self.coordinator.record("runtime.failed", error=self.failure)
             if not self.closed and self.attached.is_set():
 
@@ -280,7 +285,7 @@ class VoiceSession:
             pcm = base64.b64decode(message["audio"], validate=True)
             if len(pcm) % 2:
                 raise ValueError("Expected PCM16 mono audio")
-            self.inputs.put_nowait(pcm)
+            await self.inputs.put(pcm)
         elif kind == "conversation.item.create":
             item = message["item"]
             if item["type"] == "function_call_output":

@@ -33,6 +33,7 @@ def install():
             (completed if result.completed else failed).append(output_id)
         summary = {
             "phase": "inference",
+            "total_records": len(all_output_ids),
             "validation": "deferred_to_eval",
             "completed_record_ids": completed,
             "failed_record_ids": failed,

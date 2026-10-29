@@ -137,9 +137,8 @@ The Tau service ports are 4000 (LLM API adapter), 8000 (SoulX),
 6006 (IndexTTS) and 8765 (audio gateway). Inference jobs own and stop their service
 processes. EVA offsets these ports by 100, FDB by 200 and interactive serving by
 300, allowing the three stacks to share a node. They fail on service exit or failed service readiness checks.
-The one-GPU A6000 allocation is an initial resource configuration that still needs
-an interactive allocated-node session to inspect memory use. Managed local LLMs also consume GPU
-memory: adjust their serving parameters and Slurm resources for the selected model.
+The default shared-GPU configuration has been loaded interactively on one 48 GB
+A6000. Other local models may require different serving parameters or Slurm resources.
 
 ## Choose LLM hosting independently
 
@@ -384,11 +383,11 @@ To score a profile later, set `SOULX_OUTPUT_ROOT` to its result directory when
 submitting the corresponding `jobs/eval` script, preserving its runtime/override
 settings if the evaluation reopens the run manifest.
 
-The default inference and serving jobs request two A6000 GPUs. The frontend LLM
-uses the first scheduler-assigned GPU with a 0.75 static memory fraction; ASR/VAD
-and TTS share the second GPU. `run_stack --gpu_layout split` validates the
-allocation before launching services. An explicit `--gpu_layout shared` is
-available for custom model configurations with a suitable smaller memory budget.
+The default inference and serving jobs request one A6000 GPU and use
+`run_stack --gpu_layout shared`. The frontend/caller Qwen model, ASR/VAD, and TTS
+share that GPU. SGLang uses a 0.40 static memory fraction and caps its Mamba cache
+at eight slots, while retaining the 65K context limit and two concurrent requests.
+`--gpu_layout split` remains available for configurations that need two GPUs.
 
 Startup initializes the Omni CPU graph before launching model loaders, then waits
 for model endpoints and runtime services to become ready. The harness explicitly

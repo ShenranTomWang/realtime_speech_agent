@@ -60,8 +60,9 @@ for benchmark in "${benchmarks[@]}"; do
         fdb)
             uv pip install -e . \
                 openai python-dotenv pydub ffmpeg-python || exit 1
-            if [[ "${SOULX_INSTALL_EVAL:-0}" == "1" ]]; then
-                uv pip install 'nemo_toolkit[asr]' || exit 1
+            if [[ "${SOULX_INSTALL_EVAL:-1}" == "1" ]]; then
+                uv pip install 'nemo_toolkit[asr]==3.0.0' \
+                    'torch==2.9.1' 'torchaudio==2.9.1' --torch-backend=cu128 || exit 1
             fi
             ;;
     esac
