@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' ws://127.0.0.1:*; style-src 'self'; object-src 'none'">
+    <title>SoulX Agent</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header><div><small>LOCAL AGENTS · REMOTE MODELS</small><h1>SoulX Agent</h1></div><span id="status">Connecting…</span></header>
+    <main>
+        <section class="conversation">
+            <div class="toolbar"><button id="start" disabled>Start microphone</button><button id="mute" disabled>Mute</button><button id="interrupt">Stop speech</button></div>
+            <p class="hint">Speak naturally. Interrupting speech keeps accepted tasks running.</p>
+            <div id="transcript" aria-live="polite"></div>
+            <form id="text"><input id="message" placeholder="Or type a request…" autocomplete="off"><button>Send</button></form>
+        </section>
+        <aside><h2>Task queue <span id="count">0</span></h2><div id="tasks"><p class="hint">Delegated tasks appear here.</p></div><h2>Permissions</h2><div id="permissions"><p class="hint">Actions needing approval appear here.</p></div></aside>
+    </main>
+    <script src="renderer.js"></script>
+</body>
+</html>

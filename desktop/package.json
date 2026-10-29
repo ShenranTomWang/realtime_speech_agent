@@ -1,0 +1,8 @@
+{
+    "name": "soulx-agent-desktop",
+    "version": "0.1.0",
+    "private": true,
+    "main": "main.cjs",
+    "scripts": {"start": "electron ."},
+    "devDependencies": {"electron": "^45.1.0"}
+}

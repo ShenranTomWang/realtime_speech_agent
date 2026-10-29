@@ -7,10 +7,16 @@ from .contracts import ModelConnection, Tool
 
 
 class ClaudeHarness:
-    def __init__(self, connection: ModelConnection, system_prompt: str, tools: list[Tool]):
+    def __init__(
+        self, connection: ModelConnection, system_prompt: str, tools: list[Tool],
+        native_tools=False, cwd=None, can_use_tool=None
+    ):
         self.connection = connection
         self.system_prompt = system_prompt
         self.tools = tools
+        self.native_tools = native_tools
+        self.cwd = cwd
+        self.can_use_tool = can_use_tool
         self.client = None
         self.steering = []
         self.accepting_steering = True
@@ -48,12 +54,17 @@ class ClaudeHarness:
         token = os.environ[self.connection.api_key_env]
         options = ClaudeAgentOptions(
             model=self.connection.model,
-            system_prompt=self.system_prompt,
-            tools=[],
+            system_prompt=(
+                {"type": "preset", "preset": "claude_code", "append": self.system_prompt}
+                if self.native_tools else self.system_prompt
+            ),
+            tools={"type": "preset", "preset": "claude_code"} if self.native_tools else [],
             mcp_servers={"session": server},
             allowed_tools=[f"mcp__session__{item.name}" for item in self.tools],
-            permission_mode="dontAsk",
-            setting_sources=[],
+            permission_mode="default" if self.native_tools else "dontAsk",
+            setting_sources=["user", "project", "local"] if self.native_tools else [],
+            cwd=self.cwd,
+            can_use_tool=self.can_use_tool,
             strict_mcp_config=True,
             max_turns=32,
             effort=os.environ.get("SOULX_AGENT_EFFORT", "low"),

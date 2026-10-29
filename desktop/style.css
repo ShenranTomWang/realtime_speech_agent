@@ -1,0 +1,8 @@
+:root {color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#e2e9f2;background:#101722}
+* {box-sizing:border-box} body {margin:0} header {height:112px;padding:24px 32px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2a3547}
+small {font-size:10px;letter-spacing:2px;color:#7ebbb2} h1 {margin:7px 0;font-size:27px} #status {color:#8fd7c8;font-size:13px}
+main {display:grid;grid-template-columns:1fr 365px;height:calc(100vh - 112px)} .conversation {padding:24px;display:flex;flex-direction:column;min-width:0} aside {padding:20px;background:#151e2c;overflow:auto;border-left:1px solid #2a3547}
+h2 {font-size:16px;margin:12px 0 20px} button {background:#254c49;color:#e5fffa;border:1px solid #3b6a64;border-radius:8px;padding:9px 13px;cursor:pointer} button:disabled {opacity:.4;cursor:default}
+.toolbar {display:flex;gap:8px}.hint {color:#8495ad;font-size:12px;line-height:1.6} #transcript {flex:1;overflow:auto;padding:12px 0}.utterance {border-left:2px solid #4f8e85;margin:0 0 14px;padding:8px 14px;white-space:pre-wrap;line-height:1.5}.utterance.user {border-color:#6a80ab}.utterance.error {border-color:#d38d7d}
+form {display:flex;gap:8px} input {background:#1b2638;border:1px solid #35445e;border-radius:8px;color:#e2e9f2;padding:12px;min-width:0;flex:1}
+.task,.permission {background:#1b283b;border:1px solid #30415b;border-radius:10px;margin-bottom:12px;padding:14px;overflow-wrap:anywhere}.task p {font-size:13px;line-height:1.5;white-space:pre-wrap}.badge {font-size:10px;text-transform:uppercase;color:#97d7cb}.task button,.permission button {margin:5px 5px 0 0;font-size:11px}.permission pre {white-space:pre-wrap;font-size:11px;max-height:230px;overflow:auto} #count {color:#8495ad}

@@ -407,3 +407,92 @@ EVA runs from its pinned source checkout so its tool loader resolves correctly.
 `SOULX_EVA_DATA_DIR` points its local-caller configuration at the staged scratch
 release. Preprocessing adds language-indexed English identity and opening fields
 without changing the literal goals, scenario databases, or ground truth.
+
+## macOS desktop with model-only NewCastle hosting
+
+This is a separate interactive deployment. Existing `run_stack`, `serve`, benchmark
+jobs, Omni graphs, benchmark tools and inference/evaluation configuration are unchanged.
+Only the desktop opts into Claude Code's native backend tools. NewCastle runs the
+frontend LLM, SoulX turn detector/ASR and IndexTTS; both Claude Code harnesses,
+coordination, task history, permissions and filesystem/shell tools run on the Mac.
+The laptop frontend always receives user turns first and decides whether to delegate.
+Backend inference goes directly from the laptop's LiteLLM adapter to Vector.
+
+Install `cloudflared` on the cluster (one-time, no root required):
+
+```bash
+mkdir -p "${SCRATCH_DIR}/soulx-audio-agent/bin"
+curl -fL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+    -o "${SCRATCH_DIR}/soulx-audio-agent/bin/cloudflared"
+chmod 755 "${SCRATCH_DIR}/soulx-audio-agent/bin/cloudflared"
+```
+
+When ready to submit, from the job directory:
+
+```bash
+cd "${PROJECT_DIR}/soulx-audio-agent/jobs"
+# Optional: export SOULX_FRONTEND_TOOLS_OVERRIDE=/absolute/path/to/profile.yaml
+# Optional: export SOULX_LLM_CONFIG=/absolute/path/to/model-config.yaml
+/opt/slurm/bin/sbatch host_frontend.sh
+```
+
+The new job defaults to `delegate_simple` and one A6000. `SOULX_CLOUDFLARED` can
+select another cloudflared binary. The host exposes only authenticated model routes,
+never a cluster-side agent harness, shell, or task coordinator. It generates a new
+bearer token on each run; the token is in the private launcher/bundle, not printed.
+The public URL is printed in the default Slurm log. Models load asynchronously;
+publication of the tunnel URL does not mean model loading has finished.
+
+Outputs go to `${SCRATCH_DIR}/soulx-audio-agent/hosting/<job_id>/`:
+
+- `launch_laptop.sh`: executable zsh launcher with the actual URL and token.
+- `laptop_client.tar.gz`: source client plus launcher, ready to copy to the laptop.
+
+Copy the private bundle with `scp UBC-NewCastle:<absolute_bundle_path> .` and
+extract it into a chosen directory on your Mac. Requires Node.js and Python 3.11–3.13
+(recommended 3.12), plus the Claude Code/Agent SDK prerequisites. In that directory:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[gateway]'
+cd desktop
+npm ci
+cd ..
+export SOULX_PYTHON="$PWD/.venv/bin/python"
+./launch_laptop.sh --working_dir /absolute/path/to/your/workspace
+```
+
+The launcher sources `~/.zshrc`, so the exported `VECTOR_KEY` is inherited without
+copying its value. Keep the bundle private: anyone holding its token can call the
+model endpoints while the job runs. The URL/token expire when the job stops.
+The generated launcher is intended to remain alongside the extracted `scripts/`,
+`soulx_agent/`, `config/` and `desktop/` directories.
+
+To use another frontend URL, invoke the Python launcher directly:
+
+```bash
+export SOULX_MODEL_TOKEN='<token supplied by that host>'
+python -m scripts.run_desktop \
+    --frontend_url https://example.trycloudflare.com \
+    --working_dir /absolute/path/to/your/workspace
+```
+
+`--frontend_tools_override` can select a laptop-local profile; otherwise the host's
+profile is downloaded. `--port`, `--gateway_port`, and `--output_dir` customize local
+ports and journal storage. Native tool access uses the backend's Claude Code tool
+preset, default permission mode and user/project/local settings. Actions requiring
+approval show Allow once/Deny cards in the desktop UI; permissions are not bypassed.
+This is Claude Code's permission model, not an additional filesystem sandbox.
+
+Start the microphone and grant the macOS microphone permission. The UI also accepts
+text, displays running/completed/failed/cancelled tasks, and supports explicit steering
+and cancellation. Stopping speech or muting never cancels accepted tasks. Connection
+loss preserves in-memory tasks while the Python service is running; closing the
+window stops the laptop services and cancels unfinished tasks. Journals do not restore
+tasks after process restart. Cloudflare disconnects are reported rather than replaced
+with simulated speech. A fresh audio session can be started by restarting the client.
+
+The interactive model endpoints and desktop integration still require verification
+on an allocated GPU and a Mac with audio devices; syntax checks do not establish
+real-time latency or end-to-end inference correctness.
